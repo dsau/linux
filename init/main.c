@@ -88,6 +88,11 @@
 #include <asm/sections.h>
 #include <asm/cacheflush.h>
 
+#ifdef CONFIG_TOFFEE_MOCHA
+#include <net/toffee-mocha/core.h>
+#include <net/toffee-mocha/init.h>
+#endif
+
 static int kernel_init(void *);
 
 extern void init_IRQ(void);
@@ -678,6 +683,10 @@ asmlinkage __visible void __init start_kernel(void)
 	}
 
 	ftrace_init();
+	
+#ifdef CONFIG_TOFFEE_MOCHA
+	toffee_mocha_init();
+#endif
 
 	/* Do the rest non-__init'ed, we're now alive */
 	rest_init();

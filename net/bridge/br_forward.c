@@ -21,6 +21,12 @@
 #include <linux/netfilter_bridge.h>
 #include "br_private.h"
 
+#ifdef CONFIG_TOFFEE_MOCHA
+#include <net/toffee-mocha/stats.h>
+#include <net/toffee-mocha/engine.h>
+static DEFINE_SPINLOCK(optmem_ctr_lock);
+#endif
+
 static int deliver_clone(const struct net_bridge_port *prev,
 			 struct sk_buff *skb,
 			 void (*__packet_hook)(const struct net_bridge_port *p,
@@ -116,6 +122,46 @@ static void __br_forward(const struct net_bridge_port *to, struct sk_buff *skb)
 	skb = br_handle_vlan(to->br, vg, skb);
 	if (!skb)
 		return;
+	
+#ifdef CONFIG_TOFFEE_MOCHA
+	if (skb->dev->ifindex == G_tf_lan_port_ifindex) //from lan port? -> then opt
+	{
+#ifdef CONFIG_TOFFEE_MOCHA_DEBUG
+		printk("TOFFEE-Mocha from LAN -> then opt !\n");
+#endif
+
+#ifdef CONFIG_TOFFEE_MOCHA_STATS
+		atomic_add(skb->len, &tf_stats_lan_rx_bytes);
+		atomic_inc(&tf_stats_lan_rx_pkts);
+#endif
+
+		if (!tfm_engine(skb)) { return; }
+
+#ifdef CONFIG_TOFFEE_MOCHA_STATS
+		atomic_add(skb->len, &tf_stats_lan_tx_bytes);
+		atomic_inc(&tf_stats_lan_tx_pkts);
+#endif
+	}
+	else if (skb->dev->ifindex == G_tf_wan_port_ifindex) //from wan port? -> then un-opt
+	{
+#ifdef CONFIG_TOFFEE_MOCHA_DEBUG
+		printk("TOFFEE-Mocha from WAN -> then un-opt !\n");
+#endif
+
+#ifdef CONFIG_TOFFEE_MOCHA_STATS
+		atomic_add(skb->len, &tf_stats_wan_rx_bytes);
+		atomic_inc(&tf_stats_wan_rx_pkts);
+#endif
+
+		if (!tfm_engine(skb)) { return; }
+
+#ifdef CONFIG_TOFFEE_MOCHA_STATS
+		atomic_add(skb->len, &tf_stats_wan_tx_bytes);
+		atomic_inc(&tf_stats_wan_tx_pkts);
+#endif
+	}
+tfm_br_forward_END:
+#endif
 
 	indev = skb->dev;
 	skb->dev = to->dev;

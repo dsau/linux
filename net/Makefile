@@ -10,6 +10,8 @@ obj-$(CONFIG_NET)		:= socket.o core/
 tmp-$(CONFIG_COMPAT) 		:= compat.o
 obj-$(CONFIG_NET)		+= $(tmp-y)
 
+obj-$(CONFIG_TOFFEE_MOCHA)   += toffee-mocha/
+
 # LLC has to be linked before the files in net/802/
 obj-$(CONFIG_LLC)		+= llc/
 obj-$(CONFIG_NET)		+= ethernet/ 802/ sched/ netlink/
